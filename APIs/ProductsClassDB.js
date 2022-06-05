@@ -1,15 +1,37 @@
-const { clienteSqlAdmin } = require('../DB/sql/clienteSql.js') 
+const knex = require('knex')
+const moment = require('moment') 
 //import { clienteSqlUser } from '../clienteSql.js'
 // Star of class Contenedor
 module.exports = class ContenedorDBProducts {
 
-    constructor(nombreTabla){
+    constructor(config,nombreTabla){
         this.nombreTabla = nombreTabla;
+        this.sql = knex(config);
     }
+
+    async crearTabla () {
+        try {
+                const exists = await this.sql.schema.hasTable(this.nombreTabla)
+                if (!exists) {
+                    await this.sql.schema.createTable(this.nombreTabla, tabla => {
+                        tabla.increments('id').primary(),
+                            tabla.string('title'),
+                            tabla.float('price'),
+                            tabla.string('thumbnail')
+                    })
+                    console.log('Tabla de chat creada en esquema productos con SQLite!')
+                } else {
+                    console.log('La tabla de productos ya existe. no se realizaron cambios.')
+                }
+        } catch (e) {
+          console.log('Data Base no iniciada, ocurrió un problema!')
+          throw e
+        }
+      }
 
     async save(producto){   
         try {
-            const result = await clienteSqlAdmin.insert(producto).into(this.nombreTabla)
+            const result = await this.sql.insert(producto).into(this.nombreTabla)
             return result
         } catch (error) {
             throw error
@@ -18,7 +40,7 @@ module.exports = class ContenedorDBProducts {
 
     async getById(id_producto){
         try {
-            const personas = await clienteSqlAdmin.select('*').from(this.nombreTabla).where({ id: id_producto })
+            const personas = await this.sql.select('*').from(this.nombreTabla).where({ id: id_producto })
             if (personas.length === 0) {
                 const error = new Error('found')
                 error.tipo = 'db not found'
@@ -33,7 +55,7 @@ module.exports = class ContenedorDBProducts {
 
     async getAll(){
         try {
-            const productos = await clienteSqlAdmin.select('*').from(this.nombreTabla)
+            const productos = await this.sql(this.nombreTabla).select('*')
             return productos
         } catch (error) {
             throw error;
@@ -42,7 +64,7 @@ module.exports = class ContenedorDBProducts {
     
     async deleteById(id_producto){                                    
         try {
-            await clienteSqlAdmin.delete().from(this.nombreTabla).where({ id: id_producto })
+            await this.sql.delete().from(this.nombreTabla).where({ id: id_producto })
         } catch (error) {
             throw error;
         }
@@ -50,7 +72,7 @@ module.exports = class ContenedorDBProducts {
 
     async deleteAll(){
         try {
-            await clienteSqlAdmin.delete().from(this.nombreTabla)
+            await this.sql.delete().from(this.nombreTabla)
         } catch (error) {
             throw error;
         }
@@ -70,10 +92,14 @@ module.exports = class ContenedorDBProducts {
 
     async replaceProduct (id_producto,datos){
         try {
-            const replacement = await clienteSqlAdmin.update(datos).from(this.nombreTabla).where({ id: id_producto })
+            const replacement = await this.sql.update(datos).from(this.nombreTabla).where({ id: id_producto })
             return replacement
         } catch (error) {
             throw error;
         }
     }
+
+    close() {
+        this.knex.destroy();
+      }
  }

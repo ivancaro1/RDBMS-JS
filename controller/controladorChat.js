@@ -1,6 +1,8 @@
-const clase = require('../databases/ChatClass.js')
+const { getConfig } = require('../knexConfig.js')
+const clase = require('../APIs/ChatClassDB.js')
 
-const messages = new clase('./chat.txt')
+const messages = new clase(getConfig('mysql'),'messages')
+messages.crearTabla()
 
 const messagesController = {
   getAllMessages: function () {

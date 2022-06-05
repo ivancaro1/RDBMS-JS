@@ -1,7 +1,8 @@
-// const clase = require('../databases/ProdutcsClass.js')
-const clase = require('../databases/ProductsClassDB.js')
+const { getConfig } = require('../knexConfig.js')
+const clase = require('../APIs/ProductsClassDB.js')
 
-const productos = new clase('productosDB')
+const productos = new clase(getConfig('sqlite3'),'productos')
+productos.crearTabla()
 
 const productsController = {
     saveProduct: function (producto) {
